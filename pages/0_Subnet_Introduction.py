@@ -35,7 +35,7 @@ Imagine a **restaurant** where people are seated at different tables. This is si
 ### The Restaurant Analogy
 
 - **🏢 Restaurant** = Your entire network
-- **🪑 Tables** = Individual subnets
+- **🍽️ Tables** = Individual subnets
 - **👥 People at a table** = Devices on the same subnet
 - **🍷 Toast to the whole table** = Broadcast message
 - **🧑‍🍳 Waiter** = Router (connects different tables)
