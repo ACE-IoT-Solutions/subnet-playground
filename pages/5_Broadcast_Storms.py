@@ -825,19 +825,19 @@ if st.session_state.network_topology in ["normal", "bbmd_correct", "split_horizo
         """)
     elif st.session_state.network_topology == "full_mesh_bbmd":
         st.success(f"""
-        ✅ **FULL MESH BBMD - SAFE IF PROPERLY IMPLEMENTED**
+        ✅ **FULL MESH BBMD CONFIGURATION**
 
-        This full mesh topology works safely when BBMDs implement proper loop prevention.
+        This full mesh topology enables direct building-to-building communication.
 
-        **Why it works:**
+        **How it works:**
         - All BBMDs have all others in their BDTs
-        - BBMDs must NOT re-forward broadcasts received from other BBMDs
-        - Standard BACnet BBMD behavior prevents loops
+        - Modern BBMDs implement loop prevention (don't re-forward BBMD-sourced broadcasts)
         - Direct building-to-building communication enabled
+        - Multiple communication paths for redundancy
 
-        **Critical:** Requires quality BBMD firmware with correct loop prevention!
+        **Tradeoff:** More broadcast traffic across the network as each broadcast propagates to all BBMDs.
 
-        **Result:** Works safely with proper BBMD implementation!
+        **Result:** Safe operation with increased broadcast load.
         """)
     elif st.session_state.network_topology == "bbmd_correct":
         st.success(f"""

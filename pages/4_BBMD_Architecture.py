@@ -575,8 +575,8 @@ if split_scenario == "Split Horizon (Hub-and-Spoke)":
     st.markdown("**Real-World Use Case:** This is ideal for campus-style deployments with central management/monitoring.")
 
 else:  # Full Mesh
-    st.warning("""
-    **⚠️ Full Mesh BDT Configuration (Riskier, More Complex):**
+    st.info("""
+    **Full Mesh BDT Configuration (More Complex):**
 
     ```
                     Management Building
@@ -595,27 +595,24 @@ else:  # Full Mesh
     **Key Characteristics:**
     - Every BBMD has every other BBMD in its BDT
     - Creates a full mesh topology
-    - Requires BBMDs to implement proper loop prevention
+    - Broadcasts propagate across entire network
 
-    **Why It's More Risky:**
-    - **Depends on BBMD firmware implementing loop prevention correctly**
+    **Tradeoffs:**
+    - **More broadcast traffic** - Each broadcast is forwarded to all BBMDs
     - More complex configuration (N² BDT entries)
-    - Harder to troubleshoot when issues occur
-    - If BBMD doesn't prevent re-forwarding, broadcast storms occur
     - Adding a new building requires updating all BDTs
+    - Harder to troubleshoot due to multiple paths
 
     **When Full Mesh Might Be Used:**
     - Buildings need direct communication without hub relay
     - Redundancy requirement if hub fails
     - Network latency concerns through hub
 
-    **Critical Requirement:**
-    All BBMDs MUST implement: "Don't forward broadcasts received from another BBMD back to any BBMD in the BDT"
-
-    **Problem:** If any BBMD has buggy firmware or misconfiguration, the entire network can storm.
+    **Note on Loop Prevention:**
+    Modern BACnet BBMDs implement loop prevention by not re-forwarding broadcasts
+    received from other BBMDs. However, increased broadcast traffic across all paths
+    is unavoidable with full mesh topology.
     """)
-
-    st.markdown("**Recommendation:** Use split horizon unless you have specific requirements for mesh and high-quality BBMD hardware.")
 
 # Practical Implementation
 st.markdown("---")
