@@ -212,28 +212,144 @@ def is_private_network(network_str: str) -> bool:
         return False
 
 
-def get_network_class(network_str: str) -> Optional[str]:
+def get_network_class(network_str: str) -> Optional[Dict[str, Union[str, bool]]]:
     """
-    Determine network class (A, B, C) - legacy but still useful for education
+    Determine network class with size-aware classification and boundary validation
+
+    Returns both traditional class (by IP range) and effective class (by subnet size),
+    plus warnings for boundary violations.
 
     Args:
         network_str: Network in CIDR notation
 
     Returns:
-        Network class ('A', 'B', 'C', or 'D/E Reserved')
+        Dictionary with:
+        - 'range_class': Traditional class based on IP address range (A/B/C/D/E)
+        - 'size_class': Effective class based on subnet mask size
+        - 'display': Human-readable classification string
+        - 'is_valid': Boolean indicating if subnet crosses boundaries
+        - 'warnings': List of warning messages for boundary violations
+
+    Example:
+        >>> get_network_class('172.16.0.1/24')
+        {'range_class': 'B', 'size_class': 'C', 'display': 'Class C-sized inside Class B range', ...}
     """
     try:
         network = ipaddress.IPv4Network(network_str, strict=False)
         first_octet = int(str(network.network_address).split('.')[0])
+        cidr = network.prefixlen
+        warnings = []
+        is_valid = True
 
+        # Determine traditional class by IP range
         if first_octet < 128:
-            return 'A'
+            range_class = 'A'
         elif first_octet < 192:
-            return 'B'
+            range_class = 'B'
         elif first_octet < 224:
-            return 'C'
+            range_class = 'C'
+        elif first_octet < 240:
+            range_class = 'D (Multicast)'
         else:
-            return 'D or E (Reserved)'
+            range_class = 'E (Reserved)'
+
+        # Determine size-based class by subnet mask (smaller CIDR = bigger network)
+        # Class A: /1 to /8 (huge networks)
+        # Class B: /9 to /16 (large networks)
+        # Class C: /17 to /24 (medium networks)
+        # Subnet: /25+ (small networks)
+        if cidr <= 8:
+            size_class = 'A'
+        elif cidr <= 16:
+            size_class = 'B'
+        elif cidr <= 24:
+            size_class = 'C'
+        else:
+            size_class = 'Subnet'
+
+        # Check for boundary violations
+        # Private IP ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+        private_ranges = [
+            ipaddress.IPv4Network('10.0.0.0/8'),
+            ipaddress.IPv4Network('172.16.0.0/12'),
+            ipaddress.IPv4Network('192.168.0.0/16')
+        ]
+
+        # Check if subnet crosses private/public boundaries
+        network_start = network.network_address
+        network_end = network.broadcast_address
+
+        # Check if subnet overlaps with any private range
+        overlapping_ranges = [pr for pr in private_ranges if network.overlaps(pr)]
+
+        # If it overlaps with private ranges, check if it extends beyond them
+        if overlapping_ranges:
+            # Check if the subnet is fully contained within the private ranges
+            fully_contained = any(network.subnet_of(pr) for pr in private_ranges)
+
+            if not fully_contained:
+                # Subnet overlaps but extends beyond private range boundaries
+                warnings.append("⚠️ Subnet crosses private/public IP boundary!")
+                is_valid = False
+
+            # Check if subnet crosses multiple private ranges
+            if len(overlapping_ranges) > 1:
+                warnings.append("⚠️ Subnet spans multiple private IP ranges!")
+                is_valid = False
+
+        # Check for class boundary violations (supernetting across classes)
+        # Class A: 0.0.0.0 - 127.255.255.255
+        # Class B: 128.0.0.0 - 191.255.255.255
+        # Class C: 192.0.0.0 - 223.255.255.255
+        start_octet = int(str(network_start).split('.')[0])
+        end_octet = int(str(network_end).split('.')[0])
+
+        start_class = None
+        end_class = None
+
+        if start_octet < 128:
+            start_class = 'A'
+        elif start_octet < 192:
+            start_class = 'B'
+        elif start_octet < 224:
+            start_class = 'C'
+
+        if end_octet < 128:
+            end_class = 'A'
+        elif end_octet < 192:
+            end_class = 'B'
+        elif end_octet < 224:
+            end_class = 'C'
+
+        if start_class != end_class:
+            warnings.append(f"⚠️ Subnet crosses Class {start_class}/{end_class} boundary!")
+            is_valid = False
+
+        # Build display string
+        if not is_valid:
+            display = f"Invalid: {size_class}-sized subnet crossing boundaries"
+        elif first_octet >= 224:
+            display = range_class  # D or E
+        # Check if this exactly matches a standard private range
+        elif network == ipaddress.IPv4Network('10.0.0.0/8'):
+            display = "Class A (Standard private range)"
+        elif network == ipaddress.IPv4Network('172.16.0.0/12'):
+            display = "Class B (Standard private range)"
+        elif network == ipaddress.IPv4Network('192.168.0.0/16'):
+            display = "Class B-sized (Standard private range)"
+        elif range_class == size_class:
+            display = f"Class {range_class}"
+        else:
+            display = f"Class {size_class}-sized inside Class {range_class} range"
+
+        return {
+            'range_class': range_class,
+            'size_class': size_class,
+            'display': display,
+            'is_valid': is_valid,
+            'warnings': warnings
+        }
+
     except ValueError:
         return None
 

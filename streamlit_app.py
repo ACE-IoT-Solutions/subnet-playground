@@ -7,6 +7,7 @@ import streamlit as st
 
 # Define pages with custom names
 overview_page = st.Page("overview.py", title="Overview", icon="🌐", default=True)
+subnet_intro = st.Page("pages/0_Subnet_Introduction.py", title="Subnet Introduction", icon="🍽️")
 subnet_basics = st.Page("pages/1_Subnet_Basics.py", title="Subnet Basics", icon="🔢")
 binary_ops = st.Page("pages/2_Binary_Operations.py", title="Binary Operations", icon="⚙️")
 bacnet_overview = st.Page("pages/3_BACnet_Overview.py", title="BACnet Overview", icon="🏢")
@@ -17,6 +18,7 @@ network_scenarios = st.Page("pages/6_Network_Scenarios.py", title="Network Scena
 # Create navigation
 pg = st.navigation([
     overview_page,
+    subnet_intro,
     subnet_basics,
     binary_ops,
     bacnet_overview,

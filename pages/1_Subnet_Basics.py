@@ -103,14 +103,21 @@ with col1:
     if 'error' not in info:
         st.success(f"✅ Valid subnet: `{subnet_str}`")
 
-        # Network class
+        # Network class (enhanced with size-awareness)
         network_class = get_network_class(subnet_str)
         is_private = is_private_network(subnet_str)
 
-        st.markdown(f"""
-        - **Network Class**: {network_class}
-        - **Private Network**: {'Yes' if is_private else 'No'}
-        """)
+        # Display network class with warnings if applicable
+        if network_class:
+            class_display = network_class['display']
+            if not network_class['is_valid']:
+                st.error(f"**Network Class**: {class_display}")
+                for warning in network_class['warnings']:
+                    st.warning(warning)
+            else:
+                st.markdown(f"- **Network Class**: {class_display}")
+
+        st.markdown(f"- **Private Network**: {'Yes' if is_private else 'No'}")
     else:
         st.error(f"❌ {info['error']}")
 
