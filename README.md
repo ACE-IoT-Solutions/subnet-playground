@@ -101,7 +101,7 @@ The application will open in your browser at `http://localhost:8501`
 ```
 ace-subnet-playground/
 ├── streamlit_app.py                # ✅ Main entry point (navigation)
-├── app.py                          # ✅ Overview/landing page
+├── overview.py                          # ✅ Overview/landing page
 ├── pages/                          # ✅ All modules complete
 │   ├── 1_Subnet_Basics.py         # ✅ Complete
 │   ├── 2_Binary_Operations.py     # ✅ Complete

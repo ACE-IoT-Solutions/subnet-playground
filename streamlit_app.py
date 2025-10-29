@@ -6,7 +6,7 @@ Entry point using st.navigation for proper page naming
 import streamlit as st
 
 # Define pages with custom names
-overview_page = st.Page("app.py", title="Overview", icon="🌐", default=True)
+overview_page = st.Page("overview.py", title="Overview", icon="🌐", default=True)
 subnet_basics = st.Page("pages/1_Subnet_Basics.py", title="Subnet Basics", icon="🔢")
 binary_ops = st.Page("pages/2_Binary_Operations.py", title="Binary Operations", icon="⚙️")
 bacnet_overview = st.Page("pages/3_BACnet_Overview.py", title="BACnet Overview", icon="🏢")

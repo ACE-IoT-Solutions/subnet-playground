@@ -51,7 +51,7 @@ uv run streamlit run streamlit_app.py
 ```
 ace-subnet-playground/
 ├── streamlit_app.py                    # ✅ Main entry point
-├── app.py                              # ✅ Overview/landing page
+├── overview.py                              # ✅ Overview/landing page
 ├── pages/
 │   ├── 1_Subnet_Basics.py             # ✅ Complete module
 │   ├── 2_Binary_Operations.py         # ✅ Complete module
