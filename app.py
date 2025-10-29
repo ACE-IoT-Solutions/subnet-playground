@@ -17,7 +17,7 @@ from ace_subnet_playground.branding import get_ace_brand_css, get_ace_footer
 
 # Page configuration
 st.set_page_config(
-    page_title="BACnet Subnet & BBMD Academy",
+    page_title="Overview | BACnet Academy",
     page_icon="🌐",
     layout="wide",
     initial_sidebar_state="expanded"

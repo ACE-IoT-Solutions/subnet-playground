@@ -182,8 +182,10 @@ Basement (10.100.0.0/24, Network 500)
 
         st.info("""
         💡 **Design Notes:**
-        - Each BBMD has identical BDT (all other BBMDs)
-        - No loops in BDT (each BBMD referenced only once)
+        - Each BBMD has identical BDT (all other BBMDs listed)
+        - **Symmetric BDT entries required**: Each BBMD must list all others
+        - Example: BBMD-2's BDT = [BBMD-3, BBMD-1, BBMD-0]
+        - No circular loops (only ONE BBMD per subnet)
         - Management server uses BBMD-2 for discovery
         - Each floor is a separate broadcast domain
         """)
@@ -421,8 +423,9 @@ elif selected_scenario == "⚠️ Troubleshooting: Discovery Failure":
 
                 **Solutions:**
                 1. Configure BBMD on both subnets
-                2. Add both BBMDs to each other's BDT
+                2. **Add symmetric BDT entries**: BBMD-A lists BBMD-B, BBMD-B lists BBMD-A
                 3. Verify no firewall blocking UDP 47808
+                4. Remember: BDT entries are directional, both sides must be configured!
                 """)
     else:
         st.error("❌ No ping response - fix network connectivity first!")
@@ -512,8 +515,8 @@ best_practices = [
     },
     {
         "Category": "BBMD Placement",
-        "Best Practice": "One BBMD per subnet, all in BDT of all others",
-        "Why": "Full mesh connectivity, no single point of failure"
+        "Best Practice": "One BBMD per subnet, symmetric BDT entries (each lists all others)",
+        "Why": "Full mesh connectivity, bidirectional discovery, no single point of failure"
     },
     {
         "Category": "Broadcast Control",

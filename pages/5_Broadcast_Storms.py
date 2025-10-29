@@ -459,30 +459,42 @@ with topology_col2:
         - Two BBMDs connecting two subnets:
           - BBMD-A: 192.168.1.0/24 (blue subnet)
           - BBMD-B: 10.0.2.0/24 (purple subnet)
-        - BBMD-A has BBMD-B in its BDT
-        - BBMD-B has BBMD-A in its BDT
-        - **NO circular loop** - just bidirectional forwarding
+        - **BBMD-A has BBMD-B in its BDT** (A forwards to B)
+        - **BBMD-B has BBMD-A in its BDT** (B forwards to A)
+        - **Symmetric BDT entries required** - forwarding is NOT automatic in both directions!
 
         **Real-World Example:**
         Two-building campus with correct BBMD configuration:
         - Building A devices can discover Building B devices
         - Building B devices can discover Building A devices
-        - BBMDs forward broadcasts ONCE to their peer
-        - No retransmission loops
+        - Each BBMD explicitly configured to forward to the other
+        - No retransmission loops because each subnet has only ONE BBMD
 
-        **Why It's Safe:**
-        1. Device in Building A sends Who-Is broadcast
-        2. BBMD-A forwards to BBMD-B (once)
-        3. BBMD-B broadcasts on its local subnet
-        4. BBMD-B does NOT forward back to BBMD-A (no loop!)
-        5. Discovery completes successfully
+        **Why It's Safe (Discovery from Building A):**
+        1. Device in Building A sends Who-Is broadcast to 192.168.1.255
+        2. BBMD-A receives it, checks its BDT, forwards to BBMD-B
+        3. BBMD-B receives unicast from BBMD-A, broadcasts on 10.0.2.0/24
+        4. Devices on subnet B receive broadcast and respond
+        5. BBMD-B does NOT forward back to BBMD-A (not in same message path)
+
+        **Why It's Safe (Discovery from Building B):**
+        1. Device in Building B sends Who-Is broadcast to 10.0.2.255
+        2. BBMD-B receives it, checks its BDT, forwards to BBMD-A
+        3. BBMD-A receives unicast from BBMD-B, broadcasts on 192.168.1.0/24
+        4. Devices on subnet A receive broadcast and respond
+
+        **Critical Requirement - Symmetric BDT Entries:**
+        - **Each BBMD must have the other in its BDT**
+        - BDT entries are directional - not bidirectional by default
+        - BBMD-A having B in BDT ≠ BBMD-B automatically forwarding to A
+        - Both entries required for full bidirectional discovery
 
         **Key Difference from Loop:**
-        - BBMDs track which broadcasts they've already forwarded
-        - No circular BDT entries (not A→B→C→A)
-        - Each BBMD forwards to its peers once, then stops
+        - Only ONE BBMD per subnet (no ping-pong between multiple BBMDs)
+        - BBMDs track forwarding to prevent loops
+        - Symmetric BDT entries enable bidirectional communication
 
-        **Result:** ✅ Cross-subnet BACnet discovery works safely!
+        **Result:** ✅ Cross-subnet BACnet discovery works safely in both directions!
         """)
 
     elif topology == "Triangle Loop (Storm!)":

@@ -223,7 +223,11 @@ with tabs[4]:
     3. BBMD-A re-broadcasts on 192.168.1.0/24
     4. Original Device A receives the I-Am response
 
-    **The path works in both directions!**
+    **The path works in both directions - BUT requires symmetric BDT configuration!**
+
+    ⚠️ **Critical**: BBMD-A having BBMD-B in its BDT does NOT automatically mean
+    BBMD-B will forward to BBMD-A. Each BBMD must explicitly have the other in
+    its BDT for bidirectional communication to work.
     """)
 
 # Section 3: Interactive BDT Builder
@@ -487,7 +491,8 @@ st.markdown("""
         <li><strong>BBMD Purpose</strong>: Enables BACnet communication across subnet boundaries</li>
         <li><strong>BDT (Broadcast Distribution Table)</strong>: Lists other BBMDs to forward broadcasts to</li>
         <li><strong>Broadcast → Unicast → Broadcast</strong>: BBMDs convert broadcasts to unicast for routing</li>
-        <li><strong>Bidirectional</strong>: BBMD routing works in both directions</li>
+        <li><strong>Symmetric BDT Required</strong>: Each BBMD must have the other in its BDT for bidirectional communication</li>
+        <li><strong>BDT Entries Are Directional</strong>: BBMD-A having B in its BDT ≠ automatic forwarding from B to A</li>
         <li><strong>FDT (Foreign Device Table)</strong>: Manages remote devices that register for broadcasts</li>
         <li><strong>Critical for Multi-Subnet</strong>: Without BBMD, cross-subnet discovery fails</li>
     </ol>
