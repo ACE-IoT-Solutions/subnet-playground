@@ -14,6 +14,8 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from ace_subnet_playground.branding import get_ace_brand_css, get_ace_footer
+
 # Page config
 st.set_page_config(
     page_title="Broadcast Storms | BACnet Academy",
@@ -138,7 +140,7 @@ with topology_col1:
 
     topology = st.radio(
         "Select Network Type",
-        ["Normal (Safe)", "BBMD Loop (Storm!)", "BBMD Correct (Safe)", "Triangle Loop (Storm!)", "Mesh Network"],
+        ["Normal (Safe)", "BBMD Loop (Storm!)", "BBMD Correct (Safe)", "Split Horizon (Safe)", "Full Mesh BBMDs (Risk!)", "Triangle Loop (Storm!)", "Mesh Network"],
         key="topology_selector"
     )
 
@@ -218,6 +220,59 @@ with topology_col2:
         node_subnets["Dev-B1\n10.0.2.10"] = "10.0.2.0/24"
         node_subnets["Dev-B2\n10.0.2.11"] = "10.0.2.0/24"
 
+    elif topology == "Split Horizon (Safe)":
+        # Hub-and-spoke topology - supervisory subnet with spoke BBMDs
+        st.session_state.network_topology = "split_horizon"
+        nodes = ["BBMD-Hub\n192.168.0.1", "BBMD-A\n10.1.0.1", "BBMD-B\n10.2.0.1", "BBMD-C\n10.3.0.1",
+                 "HMI\n192.168.0.10", "Dev-A\n10.1.0.10", "Dev-B\n10.2.0.10", "Dev-C\n10.3.0.10"]
+        G.add_nodes_from(nodes)
+        # Hub connects to all spokes (star topology)
+        G.add_edges_from([("BBMD-Hub\n192.168.0.1", "BBMD-A\n10.1.0.1"),
+                         ("BBMD-Hub\n192.168.0.1", "BBMD-B\n10.2.0.1"),
+                         ("BBMD-Hub\n192.168.0.1", "BBMD-C\n10.3.0.1")])
+        # Add devices to their BBMDs
+        G.add_edges_from([("BBMD-Hub\n192.168.0.1", "HMI\n192.168.0.10"),
+                         ("BBMD-A\n10.1.0.1", "Dev-A\n10.1.0.10"),
+                         ("BBMD-B\n10.2.0.1", "Dev-B\n10.2.0.10"),
+                         ("BBMD-C\n10.3.0.1", "Dev-C\n10.3.0.10")])
+        # Assign subnets - hub on supervisory subnet, spokes on field subnets
+        node_subnets["BBMD-Hub\n192.168.0.1"] = "192.168.0.0/24"
+        node_subnets["HMI\n192.168.0.10"] = "192.168.0.0/24"
+        node_subnets["BBMD-A\n10.1.0.1"] = "10.1.0.0/24"
+        node_subnets["Dev-A\n10.1.0.10"] = "10.1.0.0/24"
+        node_subnets["BBMD-B\n10.2.0.1"] = "10.2.0.0/24"
+        node_subnets["Dev-B\n10.2.0.10"] = "10.2.0.0/24"
+        node_subnets["BBMD-C\n10.3.0.1"] = "10.0.3.0/24"
+        node_subnets["Dev-C\n10.3.0.10"] = "10.0.3.0/24"
+
+    elif topology == "Full Mesh BBMDs (Risk!)":
+        # Full mesh BDT - all BBMDs have all others in BDT (depends on loop prevention)
+        st.session_state.network_topology = "full_mesh_bbmd"
+        nodes = ["BBMD-A\n192.168.0.1", "BBMD-B\n10.1.0.1", "BBMD-C\n10.2.0.1", "BBMD-D\n10.3.0.1",
+                 "Dev-A\n192.168.0.10", "Dev-B\n10.1.0.10", "Dev-C\n10.2.0.10", "Dev-D\n10.3.0.10"]
+        G.add_nodes_from(nodes)
+        # Full mesh between BBMDs (every BBMD connected to every other)
+        G.add_edges_from([("BBMD-A\n192.168.0.1", "BBMD-B\n10.1.0.1"),
+                         ("BBMD-A\n192.168.0.1", "BBMD-C\n10.2.0.1"),
+                         ("BBMD-A\n192.168.0.1", "BBMD-D\n10.3.0.1"),
+                         ("BBMD-B\n10.1.0.1", "BBMD-C\n10.2.0.1"),
+                         ("BBMD-B\n10.1.0.1", "BBMD-D\n10.3.0.1"),
+                         ("BBMD-C\n10.2.0.1", "BBMD-D\n10.3.0.1")])
+        # Add devices to their BBMDs
+        G.add_edges_from([("BBMD-A\n192.168.0.1", "Dev-A\n192.168.0.10"),
+                         ("BBMD-B\n10.1.0.1", "Dev-B\n10.1.0.10"),
+                         ("BBMD-C\n10.2.0.1", "Dev-C\n10.2.0.10"),
+                         ("BBMD-D\n10.3.0.1", "Dev-D\n10.3.0.10")])
+        # Assign subnets - each BBMD on separate subnet
+        node_subnets["BBMD-A\n192.168.0.1"] = "192.168.0.0/24"
+        node_subnets["Dev-A\n192.168.0.10"] = "192.168.0.0/24"
+        node_subnets["BBMD-B\n10.1.0.1"] = "10.1.0.0/24"
+        node_subnets["Dev-B\n10.1.0.10"] = "10.1.0.0/24"
+        node_subnets["BBMD-C\n10.2.0.1"] = "10.2.0.0/24"
+        node_subnets["Dev-C\n10.2.0.10"] = "10.2.0.0/24"
+        node_subnets["BBMD-D\n10.3.0.1"] = "10.0.3.0/24"
+        node_subnets["Dev-D\n10.3.0.10"] = "10.0.3.0/24"
+
     elif topology == "Triangle Loop (Storm!)":
         # Triangle loop with devices
         st.session_state.network_topology = "triangle"
@@ -247,7 +302,7 @@ with topology_col2:
 
     # Create network visualization with deterministic layout
     # Choose layout based on topology for clearer visualization
-    if st.session_state.network_topology in ["bbmd_correct", "bbmd_loop"]:
+    if st.session_state.network_topology in ["bbmd_correct", "bbmd_loop", "split_horizon", "full_mesh_bbmd"]:
         # Use bipartite layout to show subnet separation
         # Separate BBMDs from regular devices, and organize by subnet
         pos = {}
@@ -497,6 +552,104 @@ with topology_col2:
         **Result:** ✅ Cross-subnet BACnet discovery works safely in both directions!
         """)
 
+    elif topology == "Split Horizon (Safe)":
+        st.success("""
+        **Split Horizon Hub-and-Spoke Architecture (Safe & Scalable)**
+
+        **Configuration:**
+        - Central supervisory subnet with hub BBMD (192.168.0.0/24)
+        - Three field subnets with spoke BBMDs:
+          - Building A: 10.1.0.0/24 (BBMD-A)
+          - Building B: 10.2.0.0/24 (BBMD-B)
+          - Building C: 10.3.0.0/24 (BBMD-C)
+        - **Hub BDT**: [BBMD-A, BBMD-B, BBMD-C]
+        - **Spoke BDTs**: Each spoke only has [Hub] in BDT
+        - Spokes do NOT have each other in their BDTs
+
+        **Real-World Scenario:**
+        Multi-building campus with central management:
+        - Management/HMI systems on supervisory subnet
+        - Field devices distributed across building subnets
+        - All communication flows through hub
+        - Easy to scale by adding new buildings
+
+        **Why It's Safe (Building A → Building B Discovery):**
+        1. Device in Building A sends Who-Is broadcast (10.1.0.255)
+        2. BBMD-A receives, checks BDT, forwards to Hub only
+        3. Hub receives from BBMD-A, checks BDT, forwards to BBMD-B and BBMD-C
+        4. BBMD-B re-broadcasts on 10.2.0.0/24
+        5. Devices in Building B respond
+        6. **No loops possible** - BBMD-B only knows about Hub, not BBMD-C
+
+        **Why It's Safe (Architecture):**
+        - **Loops impossible by design** - spokes can't forward to each other
+        - Hub is single point of broadcast distribution
+        - Easy to add new buildings (only update hub BDT)
+        - Centralized management and monitoring
+        - Supervisory devices see all field devices
+
+        **Benefits:**
+        - Scalable to 50-100 spokes
+        - Simple troubleshooting (check hub first)
+        - Central firmware update point
+        - Reduced broadcast traffic (no mesh forwarding)
+
+        **Result:** ✅ Safe, scalable architecture - recommended for campus deployments!
+        """)
+
+    elif topology == "Full Mesh BBMDs (Risk!)":
+        st.warning("""
+        **Full Mesh BDT Configuration (Riskier - Depends on BBMD Quality)**
+
+        **Configuration:**
+        - Four BBMDs on four separate subnets:
+          - BBMD-A: 192.168.0.0/24
+          - BBMD-B: 10.1.0.0/24
+          - BBMD-C: 10.2.0.0/24
+          - BBMD-D: 10.3.0.0/24
+        - **Every BBMD has every other BBMD in its BDT** (N² entries)
+        - BBMD-A BDT: [B, C, D]
+        - BBMD-B BDT: [A, C, D]
+        - BBMD-C BDT: [A, B, D]
+        - BBMD-D BDT: [A, B, C]
+
+        **Real-World Scenario:**
+        Multi-site with direct building-to-building communication needed:
+        - Each building needs to see all others directly
+        - Avoiding single point of failure (no hub)
+        - Lower latency (no hub relay)
+        - But requires high-quality BBMD hardware
+
+        **Why It's Risky (But Can Work):**
+        **CRITICAL DEPENDENCY:** All BBMDs MUST correctly implement:
+        > "Do not forward broadcasts received from another BBMD back to any BBMD in the BDT"
+
+        **Discovery Flow (if implemented correctly):**
+        1. Device-A sends Who-Is broadcast (192.168.0.255)
+        2. BBMD-A receives, forwards to B, C, and D
+        3. BBMD-B receives from A, re-broadcasts locally
+        4. BBMD-B **does NOT** forward back to A, C, or D ✅ (loop prevention)
+        5. BBMD-C and D behave the same way
+        6. Each device receives broadcast exactly once
+
+        **Why It's Risky:**
+        - **Depends on firmware quality** - buggy BBMD = network storm
+        - Complex configuration (N² BDT entries)
+        - Harder to troubleshoot when issues occur
+        - Adding new building requires updating ALL BDTs
+        - One misconfigured BBMD can crash entire network
+
+        **When To Use:**
+        - Buildings need direct peer-to-peer communication
+        - Redundancy requirement (no central hub)
+        - Very low latency needed
+        - **AND you have high-quality, tested BBMD hardware**
+
+        **Recommendation:** Use split horizon unless you have specific requirements and confidence in your BBMD hardware.
+
+        **Result:** ⚠️ Works IF BBMDs are properly implemented - test thoroughly!
+        """)
+
     elif topology == "Triangle Loop (Storm!)":
         st.error("""
         **Triangle Switch Loop (CREATES STORM!)**
@@ -584,10 +737,12 @@ st.subheader("Broadcast Propagation Analysis")
 broadcasts_per_hop = {}
 broadcast_count = 0
 
-if st.session_state.network_topology in ["normal", "bbmd_correct"]:
+if st.session_state.network_topology in ["normal", "bbmd_correct", "split_horizon", "full_mesh_bbmd"]:
     # Normal network or correctly configured BBMD - broadcasts don't multiply
     # Each device receives the broadcast once, regardless of hop count
     # BBMDs forward once to configured peers, no retransmission loops
+    # Split horizon: hub-spoke prevents loops architecturally
+    # Full mesh: depends on BBMD loop prevention (shown as safe if implemented correctly)
     total_broadcasts = len(G.nodes())
     for hop in range(max_hops):
         broadcasts_per_hop[hop] = total_broadcasts
@@ -645,28 +800,68 @@ with metric_col3:
     st.metric("Packets/Sec", f"{packets_per_sec:,}")
 
 with metric_col4:
-    if st.session_state.network_topology in ["normal", "bbmd_correct"]:
+    if st.session_state.network_topology in ["normal", "bbmd_correct", "split_horizon", "full_mesh_bbmd"]:
         severity = "🟢 Safe"
     else:
         severity = "🔴 CRITICAL"
     st.metric("Severity", severity)
 
 # Storm warning or success message
-if st.session_state.network_topology == "bbmd_correct":
-    st.success(f"""
-    ✅ **PROPERLY CONFIGURED BBMD NETWORK**
+if st.session_state.network_topology in ["normal", "bbmd_correct", "split_horizon", "full_mesh_bbmd"]:
+    if st.session_state.network_topology == "split_horizon":
+        st.success(f"""
+        ✅ **SPLIT HORIZON ARCHITECTURE - SAFE BY DESIGN**
 
-    This network has BBMDs connecting two subnets WITHOUT creating a loop.
+        This hub-and-spoke topology prevents broadcast loops architecturally.
 
-    **Why it's safe:**
-    - BBMD-A forwards to BBMD-B (one direction)
-    - BBMD-B can reply back to BBMD-A
-    - No circular BDT entries (no A→B→C→A loop)
-    - Broadcasts propagate but don't multiply
+        **Why it's safe:**
+        - Hub BBMD has all spokes in its BDT
+        - Each spoke BBMD only has hub in its BDT
+        - Spokes cannot forward to each other (don't know about each other)
+        - All communication flows through central hub
+        - Loops are impossible by network design
 
-    **Result:** Cross-subnet discovery works safely!
-    """)
-elif st.session_state.network_topology != "normal":
+        **Result:** Safe, scalable multi-building architecture!
+        """)
+    elif st.session_state.network_topology == "full_mesh_bbmd":
+        st.success(f"""
+        ✅ **FULL MESH BBMD - SAFE IF PROPERLY IMPLEMENTED**
+
+        This full mesh topology works safely when BBMDs implement proper loop prevention.
+
+        **Why it works:**
+        - All BBMDs have all others in their BDTs
+        - BBMDs must NOT re-forward broadcasts received from other BBMDs
+        - Standard BACnet BBMD behavior prevents loops
+        - Direct building-to-building communication enabled
+
+        **Critical:** Requires quality BBMD firmware with correct loop prevention!
+
+        **Result:** Works safely with proper BBMD implementation!
+        """)
+    elif st.session_state.network_topology == "bbmd_correct":
+        st.success(f"""
+        ✅ **PROPERLY CONFIGURED BBMD NETWORK**
+
+        This network has BBMDs connecting two subnets WITHOUT creating a loop.
+
+        **Why it's safe:**
+        - BBMD-A forwards to BBMD-B (one direction)
+        - BBMD-B can reply back to BBMD-A
+        - No circular BDT entries (no A→B→C→A loop)
+        - Broadcasts propagate but don't multiply
+
+        **Result:** Cross-subnet discovery works safely!
+        """)
+    else:  # normal
+        st.success(f"""
+        ✅ **NORMAL NETWORK - NO LOOPS**
+
+        This is a simple linear topology with no broadcast loops.
+
+        **Result:** Safe network operation!
+        """)
+else:
     st.error(f"""
     ⚡ **BROADCAST STORM DETECTED!**
 

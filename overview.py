@@ -100,38 +100,51 @@ st.info("👈 **Select a module from the sidebar to begin your learning journey*
 # Module overview
 modules = [
     {
+        "title": "0. Subnet Introduction",
+        "icon": "🍽️",
+        "page": "pages/0_Subnet_Introduction.py",
+        "description": "Learn subnet concepts through an intuitive restaurant/table analogy.",
+        "topics": ["Restaurant table analogy", "Hub-and-spoke patterns", "Broadcast as 'toast to table'", "BACnet broadcast context"]
+    },
+    {
         "title": "1. Subnet Basics",
         "icon": "🔢",
+        "page": "pages/1_Subnet_Basics.py",
         "description": "Master subnet mask calculations, CIDR notation, and network/host bit concepts.",
-        "topics": ["IP addressing fundamentals", "Subnet mask calculations", "Binary representation", "CIDR notation"]
+        "topics": ["IP addressing fundamentals", "Enhanced network class detection", "Binary representation", "CIDR notation", "Boundary validation"]
     },
     {
         "title": "2. Binary Operations",
         "icon": "⚙️",
+        "page": "pages/2_Binary_Operations.py",
         "description": "Understand bitwise AND operations and how devices process packets.",
         "topics": ["Bitwise AND tutorial", "Packet processing logic", "Subnet membership decisions", "Interactive calculators"]
     },
     {
         "title": "3. BACnet Overview",
         "icon": "🏢",
+        "page": "pages/3_BACnet_Overview.py",
         "description": "Introduction to BACnet protocol, device discovery, and network architecture.",
         "topics": ["BACnet/IP protocol basics", "Who-Is/I-Am discovery", "Network numbers", "Device addressing"]
     },
     {
         "title": "4. BBMD Architecture",
         "icon": "🌉",
+        "page": "pages/4_BBMD_Architecture.py",
         "description": "Learn how BBMDs enable BACnet communication across subnet boundaries.",
-        "topics": ["BBMD functionality", "Broadcast Distribution Table (BDT)", "Foreign Device Table (FDT)", "Message routing"]
+        "topics": ["BBMD functionality", "Broadcast Distribution Table (BDT)", "Foreign Device Table (FDT)", "Split horizon pattern", "Full mesh vs hub-spoke"]
     },
     {
         "title": "5. Broadcast Storms",
         "icon": "⚡",
+        "page": "pages/5_Broadcast_Storms.py",
         "description": "Visualize broadcast storm propagation and learn mitigation strategies.",
-        "topics": ["Storm causes and effects", "Interactive simulations", "Network topology impact", "Detection and prevention"]
+        "topics": ["Storm causes and effects", "Interactive topology builder", "Split horizon architecture", "Detection and prevention", "Full mesh analysis"]
     },
     {
         "title": "6. Network Scenarios",
         "icon": "🗺️",
+        "page": "pages/6_Network_Scenarios.py",
         "description": "Explore real-world BACnet network scenarios and troubleshooting.",
         "topics": ["Multi-subnet BACnet networks", "NAT challenges", "Edge device solutions", "Best practices"]
     }
@@ -151,6 +164,8 @@ for i, module in enumerate(modules):
             </ul>
         </div>
         """, unsafe_allow_html=True)
+        if st.button(f"Start Module {module['icon']}", key=f"btn_{i}", use_container_width=True):
+            st.switch_page(module['page'])
 
 # Getting started
 st.markdown("---")

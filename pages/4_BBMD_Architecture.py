@@ -480,6 +480,172 @@ fdt_data = [
 df_fdt = pd.DataFrame(fdt_data)
 st.dataframe(df_fdt, use_container_width=True, hide_index=True)
 
+# Section 6: Split Horizon Architecture
+st.markdown("---")
+st.header("6️⃣ Split Horizon Architecture Pattern")
+
+st.markdown("""
+**Split Horizon** is a BACnet network architecture pattern that uses a **hub-and-spoke** topology to prevent broadcast loops while enabling multi-subnet communication.
+""")
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("🔄 The Pattern")
+    st.info("""
+    **Split Horizon Hub-and-Spoke:**
+
+    - **Central "Supervisory" subnet** with a hub BBMD
+    - **Hub BBMD** has BDT entries for all spoke BBMDs
+    - **Spoke BBMDs** only have the hub in their BDT
+    - **Spokes do NOT have each other** in their BDTs
+
+    This creates a star topology where all communication flows through the hub.
+    """)
+
+with col2:
+    st.subheader("⚠️ Why It Works")
+    st.success("""
+    **Benefits of Split Horizon:**
+
+    - No loops possible (spokes can't forward to each other)
+    - Centralized management at supervisory subnet
+    - Scalable - easy to add new spoke subnets
+    - Simplified troubleshooting
+    - Reduced broadcast traffic
+    """)
+
+# Split Horizon Scenario
+st.subheader("Split Horizon Architecture Example")
+
+st.markdown("""
+Consider a multi-building campus with a central management building:
+""")
+
+split_scenario = st.radio(
+    "Select Architecture",
+    ["Split Horizon (Hub-and-Spoke)", "Full Mesh (Potential Loops)"],
+    horizontal=True
+)
+
+if split_scenario == "Split Horizon (Hub-and-Spoke)":
+    st.success("""
+    **✅ Split Horizon Architecture (Safe & Scalable):**
+
+    ```
+                    Management Building (Hub)
+                    Subnet: 192.168.0.0/24
+                    BBMD-Hub (192.168.0.1)
+                    BDT: [BBMD-A, BBMD-B, BBMD-C]
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+        Building A      Building B      Building C
+      10.1.0.0/24      10.2.0.0/24      10.3.0.0/24
+      BBMD-A           BBMD-B           BBMD-C
+      BDT: [Hub]       BDT: [Hub]       BDT: [Hub]
+    ```
+
+    **Key Characteristics:**
+    - Hub BBMD knows about all spoke BBMDs (A, B, C)
+    - Each spoke BBMD only knows about Hub
+    - Spokes do NOT list each other in their BDTs
+
+    **Discovery Flow (Building A → Building B):**
+    1. Device in Building A sends Who-Is broadcast (10.1.0.255)
+    2. BBMD-A receives, checks BDT, forwards to Hub only
+    3. Hub receives from BBMD-A, checks BDT, forwards to B and C
+    4. BBMD-B receives from Hub, re-broadcasts on 10.2.0.0/24
+    5. Devices in Building B respond
+    6. **No loops possible** - BBMD-B only forwards back to Hub, not to C
+
+    **Discovery Flow (Hub → Building A):**
+    1. Device in Management sends Who-Is broadcast (192.168.0.255)
+    2. Hub BBMD receives, checks BDT, forwards to A, B, and C
+    3. All spoke BBMDs re-broadcast on their local subnets
+    4. All field devices respond
+
+    **Why It's Safe:**
+    - Spokes cannot create loops (don't know about each other)
+    - Hub is single point of broadcast distribution
+    - Easy to add new buildings (update Hub BDT only)
+    - Supervisory devices on hub subnet see all field devices
+    """)
+
+    st.markdown("**Real-World Use Case:** This is ideal for campus-style deployments with central management/monitoring.")
+
+else:  # Full Mesh
+    st.warning("""
+    **⚠️ Full Mesh BDT Configuration (Riskier, More Complex):**
+
+    ```
+                    Management Building
+                    Subnet: 192.168.0.0/24
+                    BBMD-Hub (192.168.0.1)
+                    BDT: [BBMD-A, BBMD-B, BBMD-C]
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+        Building A      Building B      Building C
+      10.1.0.0/24      10.2.0.0/24      10.3.0.0/24
+      BBMD-A           BBMD-B           BBMD-C
+      BDT: [Hub,B,C]   BDT: [Hub,A,C]   BDT: [Hub,A,B]
+    ```
+
+    **Key Characteristics:**
+    - Every BBMD has every other BBMD in its BDT
+    - Creates a full mesh topology
+    - Requires BBMDs to implement proper loop prevention
+
+    **Why It's More Risky:**
+    - **Depends on BBMD firmware implementing loop prevention correctly**
+    - More complex configuration (N² BDT entries)
+    - Harder to troubleshoot when issues occur
+    - If BBMD doesn't prevent re-forwarding, broadcast storms occur
+    - Adding a new building requires updating all BDTs
+
+    **When Full Mesh Might Be Used:**
+    - Buildings need direct communication without hub relay
+    - Redundancy requirement if hub fails
+    - Network latency concerns through hub
+
+    **Critical Requirement:**
+    All BBMDs MUST implement: "Don't forward broadcasts received from another BBMD back to any BBMD in the BDT"
+
+    **Problem:** If any BBMD has buggy firmware or misconfiguration, the entire network can storm.
+    """)
+
+    st.markdown("**Recommendation:** Use split horizon unless you have specific requirements for mesh and high-quality BBMD hardware.")
+
+# Practical Implementation
+st.markdown("---")
+st.subheader("💻 Implementation Recommendations")
+
+impl_col1, impl_col2 = st.columns(2)
+
+with impl_col1:
+    st.markdown("""
+    **Setting Up Split Horizon:**
+
+    1. **Identify supervisory subnet** (management/HMI location)
+    2. **Configure hub BBMD** with all spoke BBMDs in BDT
+    3. **Configure each spoke BBMD** with only hub in BDT
+    4. **Test discovery** from each subnet
+    5. **Verify no loops** with packet capture
+    6. **Document BDT configuration** for maintenance
+    """)
+
+with impl_col2:
+    st.markdown("""
+    **Scaling Split Horizon:**
+
+    - **Adding new building:** Only update hub BDT
+    - **Maximum spokes:** Limited by hub BBMD capacity (~50-100 typically)
+    - **Hub redundancy:** Can use secondary hub with load balancing
+    - **Monitoring:** Hub subnet ideal for monitoring tools
+    - **Maintenance:** Central point for firmware updates
+    """)
+
 # Key Takeaways
 st.markdown("---")
 st.header("🎓 Key Takeaways")
