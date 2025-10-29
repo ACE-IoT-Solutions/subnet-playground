@@ -38,7 +38,7 @@ A fully functional **Streamlit educational application** focused on subnet archi
 
 ### Start the app:
 ```bash
-uv run streamlit run Overview.py
+uv run streamlit run streamlit_app.py
 ```
 
 ### Access in browser:
@@ -50,14 +50,15 @@ uv run streamlit run Overview.py
 
 ```
 ace-subnet-playground/
-├── Overview.py                              # ✅ Main landing page
+├── streamlit_app.py                    # ✅ Main entry point
+├── app.py                              # ✅ Overview/landing page
 ├── pages/
 │   ├── 1_Subnet_Basics.py             # ✅ Complete module
 │   ├── 2_Binary_Operations.py         # ✅ Complete module
-│   ├── 3_BACnet_Overview.py           # ⏳ To implement
-│   ├── 4_BBMD_Architecture.py         # ⏳ To implement
-│   ├── 5_Broadcast_Storms.py          # ⏳ To implement
-│   └── 6_Network_Scenarios.py         # ⏳ To implement
+│   ├── 3_BACnet_Overview.py           # ✅ Complete module
+│   ├── 4_BBMD_Architecture.py         # ✅ Complete module
+│   ├── 5_Broadcast_Storms.py          # ✅ Complete module
+│   └── 6_Network_Scenarios.py         # ✅ Complete module
 ├── src/ace_subnet_playground/
 │   ├── __init__.py                     # ✅
 │   └── subnet_calcs.py                 # ✅ Complete core library
@@ -205,8 +206,8 @@ uv add <package>          # Add new dependency
 
 ### Run app:
 ```bash
-uv run streamlit run Overview.py
-uv run streamlit run Overview.py --server.port 8502  # Different port
+uv run streamlit run streamlit_app.py
+uv run streamlit run streamlit_app.py --server.port 8502  # Different port
 ```
 
 ### Code quality:
@@ -267,14 +268,14 @@ uv run pytest              # Run tests (when implemented)
 
 **Port 8501 in use:**
 ```bash
-uv run streamlit run Overview.py --server.port 8502
+uv run streamlit run streamlit_app.py --server.port 8502
 ```
 
 **Import errors:**
 Make sure you're running from project root:
 ```bash
 cd /Users/acedrew/aceiot-projects/ace-subnet-playground
-uv run streamlit run Overview.py
+uv run streamlit run streamlit_app.py
 ```
 
 **Missing dependencies:**
