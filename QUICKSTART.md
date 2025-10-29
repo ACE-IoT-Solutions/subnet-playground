@@ -38,7 +38,7 @@ A fully functional **Streamlit educational application** focused on subnet archi
 
 ### Start the app:
 ```bash
-uv run streamlit run app.py
+uv run streamlit run Overview.py
 ```
 
 ### Access in browser:
@@ -50,7 +50,7 @@ uv run streamlit run app.py
 
 ```
 ace-subnet-playground/
-├── app.py                              # ✅ Main landing page
+├── Overview.py                              # ✅ Main landing page
 ├── pages/
 │   ├── 1_Subnet_Basics.py             # ✅ Complete module
 │   ├── 2_Binary_Operations.py         # ✅ Complete module
@@ -205,8 +205,8 @@ uv add <package>          # Add new dependency
 
 ### Run app:
 ```bash
-uv run streamlit run app.py
-uv run streamlit run app.py --server.port 8502  # Different port
+uv run streamlit run Overview.py
+uv run streamlit run Overview.py --server.port 8502  # Different port
 ```
 
 ### Code quality:
@@ -267,14 +267,14 @@ uv run pytest              # Run tests (when implemented)
 
 **Port 8501 in use:**
 ```bash
-uv run streamlit run app.py --server.port 8502
+uv run streamlit run Overview.py --server.port 8502
 ```
 
 **Import errors:**
 Make sure you're running from project root:
 ```bash
 cd /Users/acedrew/aceiot-projects/ace-subnet-playground
-uv run streamlit run app.py
+uv run streamlit run Overview.py
 ```
 
 **Missing dependencies:**

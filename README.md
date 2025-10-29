@@ -28,7 +28,7 @@ uv sync
 
 2. Run the application:
 ```bash
-uv run streamlit run app.py
+uv run streamlit run Overview.py
 ```
 
 The application will open in your browser at `http://localhost:8501`
@@ -100,7 +100,7 @@ The application will open in your browser at `http://localhost:8501`
 
 ```
 ace-subnet-playground/
-├── app.py                          # ✅ Main landing page
+├── Overview.py                          # ✅ Main landing page
 ├── pages/                          # ✅ All modules complete
 │   ├── 1_Subnet_Basics.py         # ✅ Complete
 │   ├── 2_Binary_Operations.py     # ✅ Complete
