@@ -1,0 +1,33 @@
+[project]
+name = "ace-subnet-playground"
+version = "0.1.0"
+description = "Interactive BACnet Subnet & BBMD Educational Academy"
+readme = "README.md"
+authors = [
+    { name = "Andrew Rodgers", email = "andrew@aceiotsolutions.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "streamlit>=1.28.0",
+    "pandas>=2.1.0",
+    "plotly>=5.17.0",
+    "networkx>=3.2",
+    "pydantic>=2.5.0",
+    "watchdog>=6.0.0",
+    "scipy>=1.16.3",
+]
+
+[project.scripts]
+ace-subnet-playground = "ace_subnet_playground:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+    "pyrefly>=0.39.1",
+    "pytest>=8.4.2",
+    "ruff>=0.14.2",
+]
