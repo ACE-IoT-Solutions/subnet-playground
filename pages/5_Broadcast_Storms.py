@@ -248,30 +248,43 @@ with topology_col2:
     elif topology == "Full Mesh BBMDs (Risk!)":
         # Full mesh BDT - all BBMDs have all others in BDT (depends on loop prevention)
         st.session_state.network_topology = "full_mesh_bbmd"
-        nodes = ["BBMD-A\n192.168.0.1", "BBMD-B\n10.1.0.1", "BBMD-C\n10.2.0.1", "BBMD-D\n10.3.0.1",
-                 "Dev-A\n192.168.0.10", "Dev-B\n10.1.0.10", "Dev-C\n10.2.0.10", "Dev-D\n10.3.0.10"]
-        G.add_nodes_from(nodes)
-        # Full mesh between BBMDs (every BBMD connected to every other)
-        G.add_edges_from([("BBMD-A\n192.168.0.1", "BBMD-B\n10.1.0.1"),
-                         ("BBMD-A\n192.168.0.1", "BBMD-C\n10.2.0.1"),
-                         ("BBMD-A\n192.168.0.1", "BBMD-D\n10.3.0.1"),
-                         ("BBMD-B\n10.1.0.1", "BBMD-C\n10.2.0.1"),
-                         ("BBMD-B\n10.1.0.1", "BBMD-D\n10.3.0.1"),
-                         ("BBMD-C\n10.2.0.1", "BBMD-D\n10.3.0.1")])
-        # Add devices to their BBMDs
-        G.add_edges_from([("BBMD-A\n192.168.0.1", "Dev-A\n192.168.0.10"),
-                         ("BBMD-B\n10.1.0.1", "Dev-B\n10.1.0.10"),
-                         ("BBMD-C\n10.2.0.1", "Dev-C\n10.2.0.10"),
-                         ("BBMD-D\n10.3.0.1", "Dev-D\n10.3.0.10")])
-        # Assign subnets - each BBMD on separate subnet
-        node_subnets["BBMD-A\n192.168.0.1"] = "192.168.0.0/24"
-        node_subnets["Dev-A\n192.168.0.10"] = "192.168.0.0/24"
-        node_subnets["BBMD-B\n10.1.0.1"] = "10.1.0.0/24"
-        node_subnets["Dev-B\n10.1.0.10"] = "10.1.0.0/24"
-        node_subnets["BBMD-C\n10.2.0.1"] = "10.2.0.0/24"
-        node_subnets["Dev-C\n10.2.0.10"] = "10.2.0.0/24"
-        node_subnets["BBMD-D\n10.3.0.1"] = "10.0.3.0/24"
-        node_subnets["Dev-D\n10.3.0.10"] = "10.0.3.0/24"
+
+        # Define BBMDs and their subnets
+        bbmds = [
+            ("BBMD-A\n192.168.0.1", "192.168.0.0/24"),
+            ("BBMD-B\n10.1.0.1", "10.1.0.0/24"),
+            ("BBMD-C\n10.2.0.1", "10.2.0.0/24"),
+            ("BBMD-D\n10.3.0.1", "10.3.0.0/24")
+        ]
+
+        # Add BBMDs
+        for bbmd, subnet in bbmds:
+            G.add_node(bbmd)
+            node_subnets[bbmd] = subnet
+
+        # Create full mesh between BBMDs (every BBMD connected to every other)
+        bbmd_nodes = [bbmd for bbmd, _ in bbmds]
+        for i in range(len(bbmd_nodes)):
+            for j in range(i + 1, len(bbmd_nodes)):
+                G.add_edge(bbmd_nodes[i], bbmd_nodes[j])
+
+        # Distribute devices across BBMDs
+        devices_per_bbmd = initial_devices // len(bbmds)
+        extra_devices = initial_devices % len(bbmds)
+
+        device_counter = 1
+        for idx, (bbmd, subnet) in enumerate(bbmds):
+            # Calculate how many devices for this BBMD
+            num_devices_here = devices_per_bbmd + (1 if idx < extra_devices else 0)
+
+            # Create devices for this BBMD
+            subnet_base = subnet.split('/')[0].rsplit('.', 1)[0]  # e.g., "192.168.0"
+            for i in range(num_devices_here):
+                device_name = f"Dev-{device_counter}\n{subnet_base}.{10 + i}"
+                G.add_node(device_name)
+                G.add_edge(bbmd, device_name)
+                node_subnets[device_name] = subnet
+                device_counter += 1
 
     elif topology == "Triangle Loop (Storm!)":
         # Triangle loop with devices
@@ -314,18 +327,26 @@ with topology_col2:
             pos[bbmd] = (i * 2, 0)
 
         # Position devices around BBMDs based on subnet
-        subnet_positions = {
-            "192.168.1.0/24": -1,
-            "10.0.2.0/24": 1,
-            "10.0.3.0/24": 3
-        }
+        # Dynamically build subnet positions based on unique subnets
+        unique_subnets = sorted(set(node_subnets.values()))
+        subnet_positions = {}
+        for i, subnet in enumerate(unique_subnets):
+            if 'BBMD' not in subnet:  # Skip BBMD entries
+                subnet_positions[subnet] = i * 2 - 1
 
         device_count_per_subnet = {}
         for device in devices:
-            subnet = node_subnets.get(device, "192.168.1.0/24")
+            subnet = node_subnets.get(device, list(subnet_positions.keys())[0] if subnet_positions else "192.168.0.0/24")
             y_base = subnet_positions.get(subnet, 0)
             count = device_count_per_subnet.get(subnet, 0)
-            pos[device] = (count * 1.5, y_base)
+            # Position devices horizontally based on their BBMD, vertically by count
+            # Find which BBMD this device belongs to
+            bbmd_x = 0
+            for bbmd in bbmds:
+                if G.has_edge(bbmd, device):
+                    bbmd_x = pos[bbmd][0]
+                    break
+            pos[device] = (bbmd_x, y_base - count * 0.5)
             device_count_per_subnet[subnet] = count + 1
 
     elif st.session_state.network_topology == "loop":
@@ -384,13 +405,15 @@ with topology_col2:
             node_sizes.append(25)
         else:
             # Color devices by subnet
-            subnet = node_subnets.get(node, "192.168.1.0/24")
-            if "192.168.1" in subnet:
+            subnet = node_subnets.get(node, "192.168.0.0/24")
+            if "192.168.0" in subnet or "192.168.1" in subnet:
                 node_colors.append('#4A90E2')  # Blue
-            elif "10.0.2" in subnet:
+            elif "10.1.0" in subnet or "10.0.2" in subnet:
                 node_colors.append('#9B59B6')  # Purple
-            elif "10.0.3" in subnet:
+            elif "10.2.0" in subnet or "10.0.3" in subnet:
                 node_colors.append('#1ABC9C')  # Teal
+            elif "10.3.0" in subnet:
+                node_colors.append('#F39C12')  # Orange
             else:
                 node_colors.append('#95A5A6')  # Gray
             node_sizes.append(20)
@@ -430,15 +453,24 @@ with topology_col2:
         unique_subnets = list(set(node_subnets.values()))
         if len(unique_subnets) > 1:
             st.markdown("**Subnet Legend:**")
-            legend_cols = st.columns(len(unique_subnets))
-            subnet_color_map = {
-                "192.168.1.0/24": ("🔵 Blue", "#4A90E2"),
-                "10.0.2.0/24": ("🟣 Purple", "#9B59B6"),
-                "10.0.3.0/24": ("🔷 Teal", "#1ABC9C")
-            }
+            legend_cols = st.columns(min(len(unique_subnets), 4))
+
+            # Dynamic color mapping based on subnet
+            def get_subnet_color(subnet):
+                if "192.168.0" in subnet or "192.168.1" in subnet:
+                    return ("🔵 Blue", "#4A90E2")
+                elif "10.1.0" in subnet or "10.0.2" in subnet:
+                    return ("🟣 Purple", "#9B59B6")
+                elif "10.2.0" in subnet or "10.0.3" in subnet:
+                    return ("🔷 Teal", "#1ABC9C")
+                elif "10.3.0" in subnet:
+                    return ("🟠 Orange", "#F39C12")
+                else:
+                    return ("⚪ Gray", "#95A5A6")
+
             for i, subnet in enumerate(sorted(unique_subnets)):
-                with legend_cols[i]:
-                    color_info = subnet_color_map.get(subnet, ("⚪ Gray", "#95A5A6"))
+                with legend_cols[i % 4]:
+                    color_info = get_subnet_color(subnet)
                     st.markdown(f"{color_info[0]}: `{subnet}`")
 
     # Scenario description boxes
