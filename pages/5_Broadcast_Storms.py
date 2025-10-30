@@ -289,21 +289,32 @@ with topology_col2:
     elif topology == "Triangle Loop (Storm!)":
         # Triangle loop with devices
         st.session_state.network_topology = "triangle"
-        nodes = ["Switch-A", "Switch-B", "Switch-C"] + [f"Device{i}" for i in range(1, 6)]
+        switches = ["Switch-A", "Switch-B", "Switch-C"]
+        devices = [f"Device{i}" for i in range(1, initial_devices + 1)]
+        nodes = switches + devices
         G.add_nodes_from(nodes)
         # Create triangle loop
         G.add_edges_from([("Switch-A", "Switch-B"), ("Switch-B", "Switch-C"), ("Switch-C", "Switch-A")])
-        # Add devices
-        G.add_edges_from([("Switch-A", "Device1"), ("Switch-A", "Device2"),
-                         ("Switch-B", "Device3"), ("Switch-B", "Device4"),
-                         ("Switch-C", "Device5")])
+
+        # Distribute devices across switches
+        devices_per_switch = initial_devices // 3
+        extra_devices = initial_devices % 3
+
+        device_idx = 0
+        for switch_idx, switch in enumerate(switches):
+            num_devices_here = devices_per_switch + (1 if switch_idx < extra_devices else 0)
+            for _ in range(num_devices_here):
+                if device_idx < len(devices):
+                    G.add_edge(switch, devices[device_idx])
+                    device_idx += 1
+
         # All on same subnet
         for node in nodes:
             node_subnets[node] = "192.168.1.0/24"
 
     else:  # Mesh Network
         st.session_state.network_topology = "mesh"
-        nodes = [f"Device{i}" for i in range(1, min(initial_devices, 8) + 1)]
+        nodes = [f"Device{i}" for i in range(1, initial_devices + 1)]
         G.add_nodes_from(nodes)
         # Create mesh - each node connected to 2-3 others
         for i, node in enumerate(nodes):
